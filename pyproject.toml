@@ -16,6 +16,19 @@ Changelog = "https://github.com/statisticsnorway/ssb-datafangst-person-fagfunksj
 [tool.poetry.dependencies]
 python = "^3.10"
 click = ">=8.0.1"
+pandas-stubs = "^2.2.3.241009"
+pandas = "^2.2.3"
+pyarrow = "^18.0.0"
+dapla-toolbelt = "^3.0.2"
+
+[[tool.mypy.overrides]]
+module = [
+    "dapla.*",
+    "pyarrow",
+    "pyarrow.parquet"
+
+]
+ignore_missing_imports = true
 
 [tool.poetry.group.dev.dependencies]
 pygments = ">=2.10.0"
