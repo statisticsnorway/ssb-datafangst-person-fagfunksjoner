@@ -1,0 +1,1 @@
+"""SSB Datafangst Person Fagfunksjoner."""
