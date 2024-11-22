@@ -28,7 +28,7 @@ from typing import Optional
 
 
 def hent_status_pd(
-    InstrumentId: str,
+    instrument_id: str,
     start_dato: Optional[date] = None,
     slutt_dato: Optional[date] = None,
 ) -> pd.DataFrame:
@@ -37,7 +37,7 @@ def hent_status_pd(
 
     Parameters
     ----------
-    InstrumentId : str
+    instrument_id : str
         The ID of the instrument to retrieve data for.
     start_dato : datetime.date. Example: datetime.date(2024, 10, 29)
         The start date of the range for filtering data.
@@ -55,7 +55,7 @@ def hent_status_pd(
     fs = FileClient.get_gcs_file_system()
 
     filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/status/*.parquet"
+        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/status/*.parquet"
     )
 
     filters = []
@@ -79,7 +79,7 @@ def hent_status_pd(
 
 
 def hent_status_pl(
-    InstrumentId: str,
+    instrument_id: str,
     start_dato: Optional[date] = None,
     slutt_dato: Optional[date] = None,
 ) -> pl.DataFrame:
@@ -88,7 +88,7 @@ def hent_status_pl(
 
     Parameters
     ----------
-    InstrumentId : str
+    instrument_id : str
         The ID of the instrument to retrieve data for.
     start_dato : datetime.date
         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
@@ -105,7 +105,7 @@ def hent_status_pl(
     fs = FileClient.get_gcs_file_system()
 
     filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/status/*.parquet"
+        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/status/*.parquet"
     )
 
     filters = []
@@ -127,13 +127,13 @@ def hent_status_pl(
     return pl.DataFrame(df)
 
 
-def hent_utvalg_pd(InstrumentId: str) -> pd.DataFrame:
+def hent_utvalg_pd(instrument_id: str) -> pd.DataFrame:
     """
     Retrieves utvalg data from GCS for a specified instrument.
 
     Parameters
     ----------
-    InstrumentId : str
+    instrument_id : str
         The ID of the instrument to retrieve data for.
 
     Returns
@@ -146,7 +146,7 @@ def hent_utvalg_pd(InstrumentId: str) -> pd.DataFrame:
     fs = FileClient.get_gcs_file_system()
 
     filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/utvalg/*.parquet"
+        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/utvalg/*.parquet"
     )
 
     df = (
@@ -163,13 +163,13 @@ def hent_utvalg_pd(InstrumentId: str) -> pd.DataFrame:
     return pd.DataFrame(df)
 
 
-def hent_utvalg_pl(InstrumentId: str) -> pl.DataFrame:
+def hent_utvalg_pl(instrument_id: str) -> pl.DataFrame:
     """
     Retrieves utvalg data from GCS for a specified instrument.
 
     Parameters
     ----------
-    InstrumentId : str
+    instrument_id : str
         The ID of the instrument to retrieve data for.
 
     Returns
@@ -182,7 +182,7 @@ def hent_utvalg_pl(InstrumentId: str) -> pl.DataFrame:
     fs = FileClient.get_gcs_file_system()
 
     filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/utvalg/*.parquet"
+        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/utvalg/*.parquet"
     )
 
     df = (
@@ -206,7 +206,7 @@ def question_sorting(x: pd.DataFrame) -> list[str]:
 
     Parameters
     ----------
-    InstrumentId : str
+    instrument_id : str
         The ID of the instrument to retrieve data for.
 
     Returns
@@ -269,9 +269,9 @@ def question_sorting(x: pd.DataFrame) -> list[str]:
         "_nonresponse.nrintslutt",
     ]
 
-    FieldNames = [x for x in one_pint if x not in ikkebolker]
+    field_names = [x for x in one_pint if x not in ikkebolker]
 
-    return FieldNames
+    return field_names
 
 
 import pandas as pd
@@ -296,7 +296,7 @@ def make_bolk(row: str) -> str:
         elif (match := re.search(r"\.(.*?)\[", row)) is not None:
             return match.group(1)
         elif (
-            match := re.search(r"skjema\.([^\.]+(?:\.[^\.]+){1})\.", row)
+            match := re.search(r"skjema\.([^\.]+(?:\.[^\.]+))\.", row)
         ) is not None:
             return match.group(1)
         elif (match := re.search("skjema\.\s*(\w+)", row)) is not None:
