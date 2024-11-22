@@ -20,6 +20,7 @@ pandas-stubs = "^2.2.3.241009"
 pandas = "^2.2.3"
 pyarrow = "^18.0.0"
 dapla-toolbelt = "^3.0.2"
+polars = "^1.14.0"
 
 [[tool.mypy.overrides]]
 module = [
