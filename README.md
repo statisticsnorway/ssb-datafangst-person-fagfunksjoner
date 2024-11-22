@@ -27,7 +27,25 @@
 
 ## Features
 
-- TODO
+Functions: 
+
+hent_status_pd: Retrieves status data for a specific InstrumentId and date range from datafangst-person GCS bucket, returning it as a Pandas DataFrame.
+
+hent_status_pl: Retrieves status data for a specific InstrumentId and date range from datafangst-person GCS bucket, returning it as a Polars DataFrame.
+
+hent_utvalg_pd: Retrieves utvalg (selection) data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Pandas DataFrame.
+
+hent_utvalg_pl: Retrieves utvalg (selection) data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Polars DataFrame.
+
+question_sorting: Processes a Paradata DataFrame returning a list of FieldNames in the order they were asked in the survey. 
+
+make_bolk: Extracts and returns a nested section (bolk) name from a string, such as FieldName.
+
+fill_all_para_pl: Prepares a Polars DataFrame with paradata for analysis by filling missing values, creating new columns, and transforming the data for analysis.
+
+fill_para_pl: Prepares a Polars DataFrame with paradata for analysis, ensuring timestamps are valid and transforming data as necessary if the data has a min TimeStamp after we started doing fill_para automatically in out iac repo.
+
+fill_para_pd: Prepares a Pandas DataFrame with paradata for analysis, ensuring timestamps are valid and transforming data as necessary if the data has a min TimeStamp after we started doing fill_para automatically in out iac repo.
 
 ## Requirements
 
