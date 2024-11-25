@@ -52,7 +52,7 @@ hent_status_pl(
 ) -> pl.DataFrame
 ```
 
-**hent_utvalg_pd** 
+**hent_utvalg_pd**
 Retrieves utvalg data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Pandas DataFrame.
 
 ```
@@ -61,7 +61,7 @@ hent_utvalg_pd(
 ) -> pd.DataFrame
 ```
 
-**hent_utvalg_pl**  
+**hent_utvalg_pl**
 Retrieves utvalg data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Polars DataFrame.
 
 ```
@@ -70,7 +70,7 @@ hent_utvalg_pl(
 ) -> pl.DataFrame
 ```
 
-**question_sorting** 
+**question_sorting**
 Processes a Paradata DataFrame returning a list of FieldNames in the order they were asked in the survey.
 
 ```
