@@ -27,25 +27,93 @@
 
 ## Features
 
-Functions: 
+Functions:
 
-hent_status_pd: Retrieves status data for a specific InstrumentId and date range from datafangst-person GCS bucket, returning it as a Pandas DataFrame.
+**hent_status_pd**
+Retrieves status data for a specific InstrumentId and date range from datafangst-person GCS bucket, returning it as a Pandas DataFrame.
 
-hent_status_pl: Retrieves status data for a specific InstrumentId and date range from datafangst-person GCS bucket, returning it as a Polars DataFrame.
+```
+hent_status_pd(
+    instrument_id: str,
+    start_dato: Optional[date] = None,
+    slutt_dato: Optional[date] = None,
+) -> pd.DataFrame
 
-hent_utvalg_pd: Retrieves utvalg (selection) data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Pandas DataFrame.
+```
 
-hent_utvalg_pl: Retrieves utvalg (selection) data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Polars DataFrame.
+**hent_status_pl**
+Retrieves status data for a specific InstrumentId and date range from datafangst-person GCS bucket, returning it as a Polars DataFrame.
 
-question_sorting: Processes a Paradata DataFrame returning a list of FieldNames in the order they were asked in the survey. 
+```
+hent_status_pl(
+    instrument_id: str,
+    start_dato: Optional[date] = None,
+    slutt_dato: Optional[date] = None,
+) -> pl.DataFrame
+```
 
-make_bolk: Extracts and returns a nested section (bolk) name from a string, such as FieldName.
+**hent_utvalg_pd** 
+Retrieves utvalg data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Pandas DataFrame.
 
-fill_all_para_pl: Prepares a Polars DataFrame with paradata for analysis by filling missing values, creating new columns, and transforming the data for analysis.
+```
+hent_utvalg_pd(
+    instrument_id: str,
+) -> pd.DataFrame
+```
 
-fill_para_pl: Prepares a Polars DataFrame with paradata for analysis, ensuring timestamps are valid and transforming data as necessary if the data has a min TimeStamp after we started doing fill_para automatically in out iac repo.
+**hent_utvalg_pl**  
+Retrieves utvalg data for a specific InstrumentId from datafangst-person GCS bucket, returning it as a Polars DataFrame.
 
-fill_para_pd: Prepares a Pandas DataFrame with paradata for analysis, ensuring timestamps are valid and transforming data as necessary if the data has a min TimeStamp after we started doing fill_para automatically in out iac repo.
+```
+hent_utvalg_pl(
+    instrument_id: str,
+) -> pl.DataFrame
+```
+
+**question_sorting** 
+Processes a Paradata DataFrame returning a list of FieldNames in the order they were asked in the survey.
+
+```
+question_sorting(
+    x: pd.DataFrame,
+) -> list[str]
+```
+
+**make_bolk**
+Extracts and returns a nested section (bolk) name from a string, such as FieldName.
+
+```
+make_bolk(
+    row: str,
+) -> str
+```
+
+**fill_all_para_pl**
+Prepares a Polars DataFrame with paradata for analysis by filling missing values, creating new columns, and transforming the data for analysis.
+
+```
+fill_all_para_pl(
+    table_df: pl.DataFrame,
+) -> pl.DataFrame
+```
+
+**fill_para_pl**
+Prepares a Polars DataFrame with paradata for analysis, transforming data as necessary if the data has a min TimeStamp after we started doing fill_para automatically in out iac repo.
+
+```
+fill_para_pl(
+    table_df: pl.DataFrame,
+) -> pl.DataFrame
+```
+
+**fill_para_pd**
+Prepares a Pandas DataFrame with paradata for analysis, transforming data as necessary if the data has a min TimeStamp after we started doing fill_para automatically in out iac repo.
+
+```
+fill_para_pd(
+    table_df: pd.DataFrame,
+) -> pd.DataFrame
+```
 
 ## Requirements
 

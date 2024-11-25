@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ssb-datafangst-person-fagfunksjoner"
-version = "0.0.1"
+version = "0.0.2"
 description = "SSB Datafangst Person Fagfunksjoner"
 authors = ["Elise ALstad <lal@ssb.no>"]
 license = "MIT"
