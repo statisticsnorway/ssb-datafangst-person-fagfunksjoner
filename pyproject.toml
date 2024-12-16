@@ -21,6 +21,7 @@ pandas = "^2.2.3"
 pyarrow = "^18.0.0"
 dapla-toolbelt = "^3.0.2"
 polars = "^1.14.0"
+ipykernel = "^6.29.5"
 
 [[tool.mypy.overrides]]
 module = [

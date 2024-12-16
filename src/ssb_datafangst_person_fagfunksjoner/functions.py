@@ -22,6 +22,7 @@ def example_function(number1: int, number2: int) -> str:
 import pandas as pd
 from dapla import FileClient
 import pyarrow.parquet as pq
+import pyarrow as pa
 import polars as pl
 from datetime import date, datetime
 from typing import Optional
@@ -440,3 +441,518 @@ def fill_para_pd(table_df: pd.DataFrame) -> pd.DataFrame:
             return pd.DataFrame(table_df)
     else:
         raise ValueError("TimeStamp is not datetime column")
+
+
+# +
+def file_concat_pd(
+    InstrumentId: str, 
+    dager:Optional['int'] = None, 
+    start_dato:Optional[date]=None, 
+    slutt_dato: Optional[date]=None
+) -> pd.DataFrame:
+        """
+    Retrieves dialhistory data for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    dager :  int
+        Number of days (dager) back in time
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pd.DataFrame
+        A Pandas DataFrame containing the dialhistory data information for the specified
+        instrument.
+    """
+        # Sjekekr om input er None eller en dato  eki 29.01.2024
+        if start_dato is None or start_dato.lower() == 'none':
+            start_dato = None
+        else:
+            start_dato = start_dato
+
+        if slutt_dato is None or slutt_dato.lower() == 'none':
+            slutt_dato = None
+        else:
+            slutt_dato = slutt_dato
+        # Arguments checks
+        if isinstance(dager,int) == True:
+            if (start_dato!=None)|(slutt_dato!=None):
+                print('Du kan ikke kombinere dager med start og slutt dato. Velg enten dager eller start_dato og/eller slutt_dato')
+            return
+
+        # Define source path
+        filepath = f'gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/dialhistory'
+        # Get google cloud filesystem
+        fs = FileClient.get_gcs_file_system()
+
+        # Define source bucket
+        bucket = 'ssb-datafangst-person-data-produkt-prod'
+
+        # Make a list of files in the sorce folder
+        files = fs.glob(filepath + "/*.parquet")
+
+        # Create an unified schema from all files in the folder
+        union_schema = get_union_schema(files,fs)
+
+        if not (dager or start_dato or slutt_dato):
+
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs,
+                                schema = union_schema)
+                .read()
+                .to_pandas()
+            )
+            first_date  = table_df.StartTime.min()
+            last_date = table_df.StartTime.max()
+            print (f'''Du har valgt å hente all ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder alle data : {first_date} - {last_date}''') 
+        elif (start_dato != None) & (slutt_dato ==None):
+            print (f'''Du har valgt å hente ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder data etter : {start_dato}''') 
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs, 
+                                filters=[("StartTime", ">=", pd.Timestamp(start_dato))],
+                                schema = union_schema)
+                .read()
+                .to_pandas()
+            )
+        elif (start_dato == None) & (slutt_dato !=None) :
+            print (f'''Du har valgt å hente ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder alle data før : {slutt_dato}''') 
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs, 
+                                filters=[("StartTime", "<=", pd.Timestamp(slutt_dato))],
+                                schema = union_schema)
+                .read()
+                .to_pandas()
+            )
+        elif (start_dato != None) & (slutt_dato !=None):
+            print (f'''Du har valgt å hente ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder alle data : {start_dato} - {slutt_dato}''') 
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs, 
+                                filters=[(("StartTime", ">=", pd.Timestamp(start_dato)), 
+                                          ("StartTime", "<=", pd.Timestamp(slutt_dato)))],
+                                schema = union_schema)
+                .read()
+                .to_pandas())
+
+        if len(table_df)<1:
+            print('''
+            Det er ingen data for denne undersøkelsen. Det kan være flere grunner til det:
+
+            1- InstrumenID kan være feil.
+            2- Det er ingen data for dataoen(e) du har valgt 
+            3- Undersøkelsen er ikke på Dapla fordi den gikk før synkronisering av data startet.''')      
+        return table_df
+
+def get_union_schema(files:list,
+                     file_system:any):
+    schemas= []
+    # Iterate over each Parquet file
+    for file in files:
+        # Read the schema of the current Parquet file
+        schema = pq.read_schema(file,filesystem=file_system)
+        schemas.append(schema)
+    
+    # Use pyarrow.unify_schemas to merge all the collected schemas
+    union_schema = pa.unify_schemas(schemas)
+    
+    return union_schema
+
+
+# -
+
+def file_concat_pl(
+    InstrumentId: str, 
+    dager:Optional['int'] = None, 
+    start_dato:Optional[date]=None, 
+    slutt_dato: Optional[date]=None
+) -> pl.DataFrame:
+        """
+    Retrieves dialhistory data for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    dager :  int
+        Number of days (dager) back in time
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pl.DataFrame
+        A Polars DataFrame containing the dialhistory data for the specified
+        instrument.
+    """
+        # Sjekekr om input er None eller en dato  eki 29.01.2024
+        if start_dato is None or start_dato.lower() == 'none':
+            start_dato = None
+        else:
+            start_dato = start_dato
+
+        if slutt_dato is None or slutt_dato.lower() == 'none':
+            slutt_dato = None
+        else:
+            slutt_dato = slutt_dato
+        # Arguments checks
+        if isinstance(dager,int) == True:
+            if (start_dato!=None)|(slutt_dato!=None):
+                print('Du kan ikke kombinere dager med start og slutt dato. Velg enten dager eller start_dato og/eller slutt_dato')
+            return
+
+        # Define source path
+        filepath = f'gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/dialhistory'
+        # Get google cloud filesystem
+        fs = FileClient.get_gcs_file_system()
+
+        # Define source bucket
+        bucket = 'ssb-datafangst-person-data-produkt-prod'
+
+        # Make a list of files in the sorce folder
+        files = fs.glob(filepath + "/*.parquet")
+
+        # Create an unified schema from all files in the folder
+        union_schema = get_union_schema(files,fs)
+
+        if not (dager or start_dato or slutt_dato):
+
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs,
+                                schema = union_schema)
+                .read()
+                
+            )
+            table_df = pl.from_arrow(table_df)
+            first_date  = table_df.select(pl.min("StartTime").cast(pl.Utf8)).item()[:-8]
+            last_date = table_df.select(pl.max("EndTime").cast(pl.Utf8)).item()[:-8]
+            print (f'''Du har valgt å hente all ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder alle data : {first_date} - {last_date}''') 
+        elif (start_dato != None) & (slutt_dato ==None):
+            print (f'''Du har valgt å hente ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder data etter : {start_dato}''') 
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs, 
+                                filters=[("StartTime", ">=", pd.Timestamp(start_dato))],
+                                schema = union_schema)
+                .read()
+                
+            )
+            table_df = pl.from_arrow(table_df)
+        elif (start_dato == None) & (slutt_dato !=None) :
+            print (f'''Du har valgt å hente ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder alle data før : {slutt_dato}''') 
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs, 
+                                filters=[("StartTime", "<=", pd.Timestamp(slutt_dato))],
+                                schema = union_schema)
+                .read()
+                
+            )
+            table_df = pl.from_arrow(table_df)
+        elif (start_dato != None) & (slutt_dato !=None):
+            print (f'''Du har valgt å hente ringedata for undersøkelsen med InstrumentId : {InstrumentId}. 
+    Datasettet inneholder alle data : {start_dato} - {slutt_dato}''') 
+            table_df = (
+                pq
+                .ParquetDataset(files, 
+                                filesystem=fs, 
+                                filters=[(("StartTime", ">=", pd.Timestamp(start_dato)), 
+                                          ("StartTime", "<=", pd.Timestamp(slutt_dato)))],
+                                schema = union_schema)
+                .read()
+            )
+            table_df = pl.from_arrow(table_df)
+
+        if len(table_df)<1:
+            print('''
+            Det er ingen data for denne undersøkelsen. Det kan være flere grunner til det:
+
+            1- InstrumenID kan være feil.
+            2- Det er ingen data for dataoen(e) du har valgt 
+            3- Undersøkelsen er ikke på Dapla fordi den gikk før synkronisering av data startet.''')
+        if "__index_level_0__" in table_df.columns:
+            table_df = table_df.drop("__index_level_0__")
+        return table_df
+
+
+def para_concat_pd(
+    InstrumentId: str, 
+    dager:Optional[int]=None, 
+    start_dato:Optional[date]=None, 
+    slutt_dato: Optional[date]=None
+)-> pd.DataFrame:
+    """
+    Retrieves paradata for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    dager :  int
+        Number of days (dager) back in time
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pd.DataFrame
+        A Pandas DataFrame containing the dialhistory data for the specified
+        instrument.
+
+  """
+    # Sjekekr om input er None eller en dato  eki 29.01.2024
+    if start_dato is None or start_dato.lower() == 'none':
+        start_dato = None
+    else:
+        start_dato = start_dato
+
+    if slutt_dato is None or slutt_dato.lower() == 'none':
+        slutt_dato = None
+    else:
+        slutt_dato = slutt_dato
+    # Arguments checks
+    if isinstance(dager,int) == True:
+        if (start_dato!=None)|(slutt_dato!=None):
+            print('Du kan ikke kombiner dager med atrt og slutt dato. Velg enten dager eller start_dato og/eller slutt_dato')
+        return
+    # Get access to filesystem at GCP
+    fs = FileClient.get_gcs_file_system()
+    # Define source bucket
+    bucket = 'ssb-datafangst-person-data-produkt-prod'
+    filepath = f'gs://{bucket}/{InstrumentId}/paradata'
+    # Make a list of files in the sorce folder
+    files = fs.glob(filepath + "/*.parquet")
+    union_schema = get_union_schema_para(files,fs)
+
+
+
+    if not (dager or start_dato or slutt_dato):
+
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs,
+                           schema = union_schema)
+            .read()
+            .to_pandas()
+        )
+        first_date  = table_df.TimeStamp.min()
+        last_date = table_df.TimeStamp.max()
+        print (f'''Du har valgt å hente all paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder alle data : {first_date} - {last_date}''') 
+    elif (start_dato != None) & (slutt_dato ==None):
+        print (f'''Du har valgt å hente paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder data etter : {start_dato}''') 
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs, 
+                            filters=[("TimeStamp", ">=", pd.Timestamp(start_dato))],
+                            schema = union_schema)
+            .read()
+            .to_pandas()
+        )
+    elif (start_dato == None) & (slutt_dato !=None) :
+        print (f'''Du har valgt å hente paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder alle data før : {slutt_dato}''') 
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs, 
+                            filters=[("TimeStamp", "<=", pd.Timestamp(slutt_dato))],
+                            schema = union_schema)
+            .read()
+            .to_pandas()
+        )
+    elif (start_dato != None) & (slutt_dato !=None):
+        print (f'''Du har valgt å hente paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder alle data : {start_dato} - {slutt_dato}''') 
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs, 
+                            filters=[(("TimeStamp", ">=", pd.Timestamp(start_dato)), 
+                                      ("TimeStamp", "<=", pd.Timestamp(slutt_dato)))],
+                           schema = union_schema)
+            .read()
+            .to_pandas())
+
+    if len(table_df)<1:
+        print('''
+        Det er ingen data for denne undersøkelsen. Det kan være flere grunner til det:
+
+        1- InstrumenID kan være feil.
+        2- Det er ingen data for dataoen(e) du har valgt 
+        3- Undersøkelsen er ikke på Dapla fordi den gikk før synkronisering av data startet.''')        
+    return table_df
+
+
+# +
+def para_concat_pl(
+    InstrumentId:str, 
+    dager:Optional[int]=None, 
+    start_dato:Optional[date]=None, 
+    slutt_dato:Optional[date]=None
+) -> pl.DataFrame:
+    """
+    Retrieves paradata for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    dager :  int
+        Number of days (dager) back in time
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pl.DataFrame
+        A Polars DataFrame containing the dialhistory data for the specified
+        instrument.
+
+      """
+    # Sjekekr om input er None eller en dato  eki 29.01.2024
+    if start_dato is None or start_dato.lower() == 'none':
+        start_dato = None
+    else:
+        start_dato = start_dato
+
+    if slutt_dato is None or slutt_dato.lower() == 'none':
+        slutt_dato = None
+    else:
+        slutt_dato = slutt_dato
+    # Arguments checks
+    if isinstance(dager,int) == True:
+        if (start_dato!=None)|(slutt_dato!=None):
+            print('Du kan ikke kombiner dager med atrt og slutt dato. Velg enten dager eller start_dato og/eller slutt_dato')
+        return
+    # Get access to filesystem at GCP
+    fs = FileClient.get_gcs_file_system()
+    # Define source bucket
+    bucket = 'ssb-datafangst-person-data-produkt-prod'
+    filepath = f'gs://{bucket}/{InstrumentId}/paradata'
+    # Make a list of files in the sorce folder
+    files = fs.glob(filepath + "/*.parquet")
+    union_schema = get_union_schema_para(files,fs)
+
+
+
+    if not (dager or start_dato or slutt_dato):
+
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs,
+                           schema = union_schema)
+            .read()
+
+        )
+        table_df = pl.from_arrow(table_df)
+        first_date  = table_df.select(pl.min("TimeStamp").cast(pl.Utf8)).item()[:-8]
+        last_date = table_df.select(pl.max("TimeStamp").cast(pl.Utf8)).item()[:-8]
+        print (f'''Du har valgt å hente all paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder alle data : {first_date} - {last_date}''') 
+    elif (start_dato != None) & (slutt_dato ==None):
+        print (f'''Du har valgt å hente paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder data etter : {start_dato}''') 
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs, 
+                            filters=[("TimeStamp", ">=", pd.Timestamp(start_dato))],
+                            schema = union_schema)
+            .read()
+
+        )
+        table_df = pl.DataFrame(table_df)
+
+    elif (start_dato == None) & (slutt_dato !=None) :
+        print (f'''Du har valgt å hente paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder alle data før : {slutt_dato}''') 
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs, 
+                            filters=[("TimeStamp", "<=", pd.Timestamp(slutt_dato))],
+                            schema = union_schema)
+            .read()
+
+        )
+        table_df = pl.DataFrame(table_df)
+    elif (start_dato != None) & (slutt_dato !=None):
+        print (f'''Du har valgt å hente paradata for undersøkelsen med InstrumentId : {InstrumentId}. 
+Datasettet inneholder alle data : {start_dato} - {slutt_dato}''') 
+        table_df = (
+            pq
+            .ParquetDataset(files, 
+                            filesystem=fs, 
+                            filters=[(("TimeStamp", ">=", pd.Timestamp(start_dato)), 
+                                      ("TimeStamp", "<=", pd.Timestamp(slutt_dato)))],
+                           schema = union_schema)
+            .read()
+        )
+        table_df = pl.DataFrame(table_df)
+    if len(table_df)<1:
+        print('''
+        Det er ingen data for denne undersøkelsen. Det kan være flere grunner til det:
+
+        1- InstrumenID kan være feil.
+        2- Det er ingen data for dataoen(e) du har valgt 
+        3- Undersøkelsen er ikke på Dapla fordi den gikk før synkronisering av data startet.''')        
+    return table_df
+
+
+def get_union_schema_para(files, file_system):
+    schemas = []
+    
+    # Iterate over each Parquet file
+    for file in files:
+        # Read the schema of the current Parquet file
+        schema = pq.read_schema(file, filesystem=file_system)
+        
+        # lag alle til string, untatt diff_time (dubble) og timestamp til datetime
+        new_fields = [
+            pa.field(field.name, 
+                     pa.float64() if field.name == 'diff_time' 
+                     else pa.timestamp('ms') if field.name == 'TimeStamp'
+                     else pa.string(),  # Default to string for other fields
+                     nullable=field.nullable, metadata=field.metadata)
+            for field in schema
+        ]
+        
+        schemas.append(pa.schema(new_fields))
+    
+    union_schema = pa.unify_schemas(schemas)
+    
+    return union_schema
