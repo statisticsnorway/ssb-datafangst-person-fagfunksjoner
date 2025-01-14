@@ -475,16 +475,13 @@ def file_concat_pd(
 
     if slutt_dato:
         filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
-
-    # Define source path
-    filepath = (
-        f"gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/dialhistory"
-    )
-    # Get google cloud filesystem
-    fs = FileClient.get_gcs_file_system()
-
     # Define source bucket
     bucket = "ssb-datafangst-person-data-produkt-prod"
+
+    # Define source path
+    filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
+    # Get google cloud filesystem
+    fs = FileClient.get_gcs_file_system()
 
     # Make a list of files in the sorce folder
     files = fs.glob(filepath + "/*.parquet")
@@ -546,8 +543,6 @@ def file_concat_pl(
     ----------
     instrument_id : str
         The ID of the instrument to retrieve data for.
-    dager :  int
-        Number of days (dager) back in time
     start_dato : datetime.date
         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
     slutt_dato : datetime.date
@@ -566,15 +561,12 @@ def file_concat_pl(
     if slutt_dato:
         filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
 
-    # Define source path
-    filepath = (
-        f"gs://ssb-datafangst-person-data-produkt-prod/{InstrumentId}/dialhistory"
-    )
-    # Get google cloud filesystem
-    fs = FileClient.get_gcs_file_system()
-
     # Define source bucket
     bucket = "ssb-datafangst-person-data-produkt-prod"
+    # Define source path
+    filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
+    # Get google cloud filesystem
+    fs = FileClient.get_gcs_file_system()
 
     # Make a list of files in the sorce folder
     files = fs.glob(filepath + "/*.parquet")
@@ -604,8 +596,6 @@ def para_concat_pd(
     ----------
     instrument_id : str
         The ID of the instrument to retrieve data for.
-    dager :  int
-        Number of days (dager) back in time
     start_dato : datetime.date
         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
     slutt_dato : datetime.date
