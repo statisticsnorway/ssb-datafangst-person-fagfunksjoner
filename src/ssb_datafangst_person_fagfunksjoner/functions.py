@@ -498,13 +498,9 @@ def file_concat_pd(
         schema=union_schema,
         filters=filters if filters else None,
     ).read()
-    first_date = table_df.StartTime.min()
-    last_date = table_df.StartTime.max()
-    print(
-        f"""Du har valgt å hente all ringedata for undersøkelsen med InstrumentId : {InstrumentId}.
-Datasettet inneholder alle data : {first_date} - {last_date}"""
-    )
-    return pd.DataFrame(table_df)
+
+    df = table_df.to_pandas()
+    return pd.DataFrame(df)
 
 
 def get_union_schema(files: list[str]) -> Schema:
@@ -590,14 +586,6 @@ def file_concat_pl(
         files, filesystem=fs, schema=union_schema, filters=filters if filters else None
     ).read()
     table_df = pl.from_arrow(table_df)
-    first_date = table_df.select(pl.min("StartTime").cast(pl.Utf8)).item()[:-8]
-    last_date = table_df.select(pl.max("EndTime").cast(pl.Utf8)).item()[:-8]
-    print(
-        f"""
-    Du har valgt å hente all ringedata for undersøkelsen med InstrumentId : {InstrumentId}.
-    Datasettet inneholder alle data : {first_date} - {last_date}
-    """
-    )
 
     if "__index_level_0__" in table_df.columns:
         table_df = table_df.drop("__index_level_0__")
@@ -649,15 +637,9 @@ def para_concat_pd(
     table_df = pq.ParquetDataset(
         files, filesystem=fs, schema=union_schema, filters=filters if filters else None
     ).read()
-    first_date = table_df.TimeStamp.min()
-    last_date = table_df.TimeStamp.max()
-    print(
-        f"""
-    Du har valgt å hente all paradata for undersøkelsen med InstrumentId : {InstrumentId}.
-    Datasettet inneholder alle data : {first_date} - {last_date}"""
-    )
 
-    return pd.DataFrame(table_df)
+    df = table_df.to_pandas()
+    return pd.DataFrame(df)
 
 
 # +
@@ -711,13 +693,6 @@ def para_concat_pl(
     ).read()
     table_df = pl.from_arrow(table_df)
 
-    first_date = table_df.select(pl.min("TimeStamp").cast(pl.Utf8)).item()[:-8]
-    last_date = table_df.select(pl.max("TimeStamp").cast(pl.Utf8)).item()[:-8]
-    print(
-        f"""
-    Du har valgt å hente all paradata for undersøkelsen med InstrumentId : {InstrumentId}.
-    Datasettet inneholder alle data : {first_date} - {last_date}"""
-    )
     if "__index_level_0__" in table_df.columns:
         table_df = table_df.drop("__index_level_0__")
 
