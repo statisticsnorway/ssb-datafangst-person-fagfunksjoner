@@ -22,9 +22,11 @@ def example_function(number1: int, number2: int) -> str:
 import pandas as pd
 from dapla import FileClient
 import pyarrow.parquet as pq
+import pyarrow as pa
 import polars as pl
 from datetime import date, datetime
 from typing import Optional
+from pyarrow import Schema
 
 
 def hent_status_pd(
@@ -440,3 +442,294 @@ def fill_para_pd(table_df: pd.DataFrame) -> pd.DataFrame:
             return pd.DataFrame(table_df)
     else:
         raise ValueError("TimeStamp is not datetime column")
+
+
+# +
+def file_concat_pd(
+    InstrumentId: str,
+    start_dato: Optional[date] = None,
+    slutt_dato: Optional[date] = None,
+) -> pd.DataFrame:
+    """
+    Retrieves dialhistory data for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pd.DataFrame
+        A Pandas DataFrame containing the dialhistory data information for the specified
+        instrument.
+    """
+
+    filters = []
+    if start_dato:
+        filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
+
+    if slutt_dato:
+        filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
+    # Define source bucket
+    bucket = "ssb-datafangst-person-data-produkt-prod"
+
+    # Define source path
+    filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
+    # Get google cloud filesystem
+    fs = FileClient.get_gcs_file_system()
+
+    # Make a list of files in the sorce folder
+    files = fs.glob(filepath + "/*.parquet")
+
+    # Create an unified schema from all files in the folder
+    union_schema = get_union_schema(files)
+
+    table_df = pq.ParquetDataset(
+        files,
+        filesystem=fs,
+        schema=union_schema,
+        filters=filters if filters else None,
+    ).read()
+
+    df = table_df.to_pandas()
+    return pd.DataFrame(df)
+
+
+def get_union_schema(files: list[str]) -> Schema:
+    """
+    Creates a union of all schemas for the given list of Parquet files.
+
+    Parameters
+    ----------
+    files : list[str]
+        A list of file paths for the Parquet files.
+
+    Returns
+    -------
+    Schema
+        A PyArrow schema representing the union of all schemas.
+    """
+    fs = FileClient.get_gcs_file_system()
+    schemas = []
+    # Iterate over each Parquet file
+    for file in files:
+        # Read the schema of the current Parquet file
+        schema = pq.read_schema(file, filesystem=fs)
+        schemas.append(schema)
+
+    # Use pyarrow.unify_schemas to merge all the collected schemas
+    union_schema = pa.unify_schemas(schemas)
+
+    return union_schema
+
+
+# -
+
+
+def file_concat_pl(
+    InstrumentId: str,
+    start_dato: Optional[date] = None,
+    slutt_dato: Optional[date] = None,
+) -> pl.DataFrame:
+    """
+    Retrieves dialhistory data for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pl.DataFrame
+        A Polars DataFrame containing the dialhistory data for the specified
+        instrument.
+    """
+    filters = []
+    if start_dato:
+        filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
+
+    if slutt_dato:
+        filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
+
+    # Define source bucket
+    bucket = "ssb-datafangst-person-data-produkt-prod"
+    # Define source path
+    filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
+    # Get google cloud filesystem
+    fs = FileClient.get_gcs_file_system()
+
+    # Make a list of files in the sorce folder
+    files = fs.glob(filepath + "/*.parquet")
+
+    # Create an unified schema from all files in the folder
+    union_schema = get_union_schema(files)
+
+    table_df = pq.ParquetDataset(
+        files, filesystem=fs, schema=union_schema, filters=filters if filters else None
+    ).read()
+    table_df = pl.from_arrow(table_df)
+
+    if "__index_level_0__" in table_df.columns:
+        table_df = table_df.drop("__index_level_0__")
+    return pl.DataFrame(table_df)
+
+
+def para_concat_pd(
+    InstrumentId: str,
+    start_dato: Optional[date] = None,
+    slutt_dato: Optional[date] = None,
+) -> pd.DataFrame:
+    """
+    Retrieves paradata for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pd.DataFrame
+        A Pandas DataFrame containing the dialhistory data for the specified
+        instrument.
+
+    """
+    filters = []
+    if start_dato:
+        filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
+
+    if slutt_dato:
+        filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
+
+    # Get access to filesystem at GCP
+    fs = FileClient.get_gcs_file_system()
+    # Define source bucket
+    bucket = "ssb-datafangst-person-data-produkt-prod"
+    filepath = f"gs://{bucket}/{InstrumentId}/paradata"
+    # Make a list of files in the sorce folder
+    files = fs.glob(filepath + "/*.parquet")
+
+    union_schema = get_union_schema_para(files)
+    table_df = pq.ParquetDataset(
+        files, filesystem=fs, schema=union_schema, filters=filters if filters else None
+    ).read()
+
+    df = table_df.to_pandas()
+    return pd.DataFrame(df)
+
+
+# +
+def para_concat_pl(
+    InstrumentId: str,
+    dager: Optional[int] = None,
+    start_dato: Optional[date] = None,
+    slutt_dato: Optional[date] = None,
+) -> pl.DataFrame:
+    """
+    Retrieves paradata for a specified instrument for a given period.
+
+    Parameters
+    ----------
+    instrument_id : str
+        The ID of the instrument to retrieve data for.
+    dager :  int
+        Number of days (dager) back in time
+    start_dato : datetime.date
+        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+    slutt_dato : datetime.date
+        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+    Returns
+    -------
+    pl.DataFrame
+        A Polars DataFrame containing the dialhistory data for the specified
+        instrument.
+
+    """
+    filters = []
+    if start_dato:
+        filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
+
+    if slutt_dato:
+        filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
+
+    # Get access to filesystem at GCP
+    fs = FileClient.get_gcs_file_system()
+
+    # Define source bucket
+    bucket = "ssb-datafangst-person-data-produkt-prod"
+    filepath = f"gs://{bucket}/{InstrumentId}/paradata"
+
+    # Make a list of files in the sorce folder
+    files = fs.glob(filepath + "/*.parquet")
+    union_schema = get_union_schema_para(files)
+
+    table_df = pq.ParquetDataset(
+        files, filesystem=fs, schema=union_schema, filters=filters if filters else None
+    ).read()
+    table_df = pl.from_arrow(table_df)
+
+    if "__index_level_0__" in table_df.columns:
+        table_df = table_df.drop("__index_level_0__")
+
+    return pl.DataFrame(table_df)
+
+
+def get_union_schema_para(files: list[str]) -> Schema:
+    """
+    Creates a union of all schemas for the given list of Parquet files.
+
+    Parameters
+    ----------
+    files : list[str]
+        A list of file paths for the Parquet files.
+
+    Returns
+    -------
+    Schema
+        A PyArrow schema representing the union of all schemas.
+    """
+    schemas = []
+    fs = FileClient.get_gcs_file_system()
+
+    # Iterate over each Parquet file
+    for file in files:
+        # Read the schema of the current Parquet file
+        schema = pq.read_schema(file, filesystem=fs)
+
+        # lag alle til string, untatt diff_time (dubble) og timestamp til datetime
+        new_fields = [
+            pa.field(
+                field.name,
+                (
+                    pa.float64()
+                    if field.name == "diff_time"
+                    else (
+                        pa.timestamp("ms") if field.name == "TimeStamp" else pa.string()
+                    )
+                ),  # Default to string for other fields
+                nullable=field.nullable,
+                metadata=field.metadata,
+            )
+            for field in schema
+        ]
+
+        schemas.append(pa.schema(new_fields))
+
+    union_schema = pa.unify_schemas(schemas)
+
+    return union_schema
