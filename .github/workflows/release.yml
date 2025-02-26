@@ -62,11 +62,19 @@ jobs:
 
       - name: Publish package on PyPI
         if: steps.check-version.outputs.tag
+<<<<<<< HEAD
         uses: pypa/gh-action-pypi-publish@v1.12.4
 
       - name: Publish package on TestPyPI
         if: (!steps.check-version.outputs.tag)
         uses: pypa/gh-action-pypi-publish@v1.12.4
+=======
+        uses: pypa/gh-action-pypi-publish@v1.12.3
+
+      - name: Publish package on TestPyPI
+        if: (!steps.check-version.outputs.tag)
+        uses: pypa/gh-action-pypi-publish@v1.12.3
+>>>>>>> origin/cruft-update
         with:
           repository-url: https://test.pypi.org/legacy/
 

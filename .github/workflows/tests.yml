@@ -125,7 +125,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5.4.0
         with:
+<<<<<<< HEAD
           python-version: "3.11"
+=======
+          python-version: "3.10"
+>>>>>>> origin/cruft-update
 
       - name: Upgrade pip
         run: |
