@@ -299,7 +299,7 @@ def make_bolk(row: str) -> str:
             return match.group(1)
         elif (match := re.search(r"skjema\.([^\.]+(?:\.[^\.]+))\.", row)) is not None:
             return match.group(1)
-        elif (match := re.search("skjema\.\s*(\w+)", row)) is not None:
+        elif (match := re.search(r"skjema\.\s*(\w+)", row)) is not None:
             return match.group(1)
         else:
             return row

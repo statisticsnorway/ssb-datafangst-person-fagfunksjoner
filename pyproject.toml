@@ -14,11 +14,10 @@ classifiers = ["Development Status :: 3 - Alpha"]
 Changelog = "https://github.com/statisticsnorway/ssb-datafangst-person-fagfunksjoner/releases"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.11,<4.0"
 click = ">=8.0.1"
-pandas-stubs = "^2.2.3.241009"
-pandas = "^2.2.3"
-pyarrow = ">=23,<24"
+pandas = ">=2.2.3,<4.0.0"
+pyarrow = ">=23,<26"
 dapla-toolbelt = "^3.0.2"
 polars = "^1.14.0"
 ipykernel = "^6.29.5"
@@ -40,6 +39,7 @@ coverage = { extras = ["toml"], version = ">=6.2" }
 darglint = ">=1.8.1"
 furo = ">=2021.11.12"
 mypy = ">=0.930"
+pandas-stubs = "^3.0.5.260730"
 pre-commit = ">=2.16.0"
 pre-commit-hooks = ">=4.1.0"
 ruff = ">=0.0.284"
