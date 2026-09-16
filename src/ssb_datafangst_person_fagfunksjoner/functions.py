@@ -20,10 +20,10 @@ def example_function(number1: int, number2: int) -> str:
 
 
 import pandas as pd
-from dapla import FileClient
+#from dapla import FileClient
 import pyarrow.parquet as pq
 import pyarrow as pa
-import polars as pl
+#import polars as pl
 from datetime import date, datetime
 from typing import Optional
 from pyarrow import Schema
@@ -31,8 +31,8 @@ from pyarrow import Schema
 
 def hent_status_pd(
     instrument_id: str,
-    start_dato: Optional[date] = None,
-    slutt_dato: Optional[date] = None,
+    start_dato: date | None = None,
+    slutt_dato: date | None = None,
 ) -> pd.DataFrame:
     """
     Retrieves status data from GCS for a specified instrument within a given date range.
@@ -54,11 +54,8 @@ def hent_status_pd(
 
     """
 
-    fs = FileClient.get_gcs_file_system()
-
-    filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/status/*.parquet"
-    )
+    from pathlib import Path
+    import pyarrow.parquet as pq
 
     filters = []
     if start_dato:
@@ -67,67 +64,61 @@ def hent_status_pd(
     if slutt_dato:
         filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
 
-    df = (
-        (
-            pq.ParquetDataset(
-                filepath, filesystem=fs, filters=filters if filters else None
-            )
-        )
-        .read()
-        .to_pandas()
-    )
-
+    files = [str(p) for p in Path(f"/buckets/produkt/{instrument_id}/status").glob("*.parquet")]
+    df = pq.ParquetDataset(files, filters=filters if filters else None).read().to_pandas()
+        
     return pd.DataFrame(df)
 
 
-def hent_status_pl(
-    instrument_id: str,
-    start_dato: Optional[date] = None,
-    slutt_dato: Optional[date] = None,
-) -> pl.DataFrame:
-    """
-    Retrieves status data from GCS for a specified instrument within a given date range.
+# +
+# def hent_status_pl(
+#     instrument_id: str,
+#     start_dato: Optional[date] = None,
+#     slutt_dato: Optional[date] = None,
+# ) -> pl.DataFrame:
+#     """
+#     Retrieves status data from GCS for a specified instrument within a given date range.
 
-    Parameters
-    ----------
-    instrument_id : str
-        The ID of the instrument to retrieve data for.
-    start_dato : datetime.date
-        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-    slutt_dato : datetime.date
-        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
+#     start_dato : datetime.date
+#         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     slutt_dato : datetime.date
+#         The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
 
-    Returns
-    -------
-    pl.DataFrame
-        A Polars DataFrame containing the status information for the specified
-        instrument within the defined date range.
-    """
+#     Returns
+#     -------
+#     pl.DataFrame
+#         A Polars DataFrame containing the status information for the specified
+#         instrument within the defined date range.
+#     """
 
-    fs = FileClient.get_gcs_file_system()
+#     fs = FileClient.get_gcs_file_system()
 
-    filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/status/*.parquet"
-    )
+#     filepath = fs.glob(
+#         f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/status/*.parquet"
+#     )
 
-    filters = []
-    if start_dato:
-        filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
+#     filters = []
+#     if start_dato:
+#         filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
 
-    if slutt_dato:
-        filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
+#     if slutt_dato:
+#         filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
 
-    df = (
-        pq.ParquetDataset(filepath, filesystem=fs, filters=filters if filters else None)
-    ).read()
+#     df = (
+#         pq.ParquetDataset(filepath, filesystem=fs, filters=filters if filters else None)
+#     ).read()
 
-    df = pl.from_arrow(df)
+#     df = pl.from_arrow(df)
 
-    if "__index_level_0__" in df.columns:
-        df = df.drop("__index_level_0__")
+#     if "__index_level_0__" in df.columns:
+#         df = df.drop("__index_level_0__")
 
-    return pl.DataFrame(df)
-
+#     return pl.DataFrame(df)
+# -
 
 def hent_utvalg_pd(instrument_id: str) -> pd.DataFrame:
     """
@@ -144,63 +135,53 @@ def hent_utvalg_pd(instrument_id: str) -> pd.DataFrame:
         A Pandas DataFrame containing the utvalg information for the specified
         instrument.
     """
+    from pathlib import Path
+    import pyarrow.parquet as pq
 
-    fs = FileClient.get_gcs_file_system()
-
-    filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/utvalg/*.parquet"
-    )
-
-    df = (
-        (
-            pq.ParquetDataset(
-                filepath,
-                filesystem=fs,
-            )
-        )
-        .read()
-        .to_pandas()
-    )
-
+    files = [str(p) for p in Path(f"/buckets/produkt/{instrument_id}/utvalg").glob("*.parquet")]
+    df = pq.ParquetDataset(files, filters=filters if filters else None).read().to_pandas()
+        
     return pd.DataFrame(df)
+    
 
 
-def hent_utvalg_pl(instrument_id: str) -> pl.DataFrame:
-    """
-    Retrieves utvalg data from GCS for a specified instrument.
+# +
+# def hent_utvalg_pl(instrument_id: str) -> pl.DataFrame:
+#     """
+#     Retrieves utvalg data from GCS for a specified instrument.
 
-    Parameters
-    ----------
-    instrument_id : str
-        The ID of the instrument to retrieve data for.
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
 
-    Returns
-    -------
-    pl.DataFrame
-        A Polars DataFrame containing the utvalg information for the specified
-        instrument.
-    """
+#     Returns
+#     -------
+#     pl.DataFrame
+#         A Polars DataFrame containing the utvalg information for the specified
+#         instrument.
+#     """
 
-    fs = FileClient.get_gcs_file_system()
+#     fs = FileClient.get_gcs_file_system()
 
-    filepath = fs.glob(
-        f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/utvalg/*.parquet"
-    )
+#     filepath = fs.glob(
+#         f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/utvalg/*.parquet"
+#     )
 
-    df = (
-        pq.ParquetDataset(
-            filepath,
-            filesystem=fs,
-        )
-    ).read()
+#     df = (
+#         pq.ParquetDataset(
+#             filepath,
+#             filesystem=fs,
+#         )
+#     ).read()
 
-    df = pl.from_arrow(df)
+#     df = pl.from_arrow(df)
 
-    if "__index_level_0__" in df.columns:
-        df = df.drop("__index_level_0__")
+#     if "__index_level_0__" in df.columns:
+#         df = df.drop("__index_level_0__")
 
-    return pl.DataFrame(df)
-
+#     return pl.DataFrame(df)
+# -
 
 def question_sorting(x: pd.DataFrame) -> list[str]:
     """
@@ -276,10 +257,6 @@ def question_sorting(x: pd.DataFrame) -> list[str]:
     return field_names
 
 
-import pandas as pd
-from typing import Optional
-
-
 def make_bolk(row: str) -> str:
     """
     En funksjon som kan brukes med map eller apply som tar en string, FieldName, og returnerer bolk navn.
@@ -305,110 +282,108 @@ def make_bolk(row: str) -> str:
             return row
 
 
-def fill_all_para_pl(table_df: pl.DataFrame) -> pl.DataFrame:
-    """
-    param: polars dataframe
-    output: prepared polars dataframe for analysis
-    The function prepares table_df for data analysis:
-    - fills PageIndex downward
-    - fills FieldName downward
-    - creates a new variable with VariableName
-    - creates variable diff_time which represents time spent on each observation/action for an IO.
-    - Fills LayoutSetName by session id
-    - creates a new column with bolk name using the function make_bolk()
-    """
+# +
+# def fill_all_para_pl(table_df: pl.DataFrame) -> pl.DataFrame:
+#     """
+#     param: polars dataframe
+#     output: prepared polars dataframe for analysis
+#     The function prepares table_df for data analysis:
+#     - fills PageIndex downward
+#     - fills FieldName downward
+#     - creates a new variable with VariableName
+#     - creates variable diff_time which represents time spent on each observation/action for an IO.
+#     - Fills LayoutSetName by session id
+#     - creates a new column with bolk name using the function make_bolk()
+#     """
 
-    # Sorting rows by timestamp and SessionId. IO will appear in the order based on timestamp when they responded, and rows for an IO will be sorted by timestamp.
-    table_df = table_df.sort(["SessionId", "TimeStamp"])
+#     # Sorting rows by timestamp and SessionId. IO will appear in the order based on timestamp when they responded, and rows for an IO will be sorted by timestamp.
+#     table_df = table_df.sort(["SessionId", "TimeStamp"])
 
-    # fill PageIndex downward
-    table_df = table_df.with_columns(
-        pl.col("PageIndex").forward_fill().over("SessionId")
-    )
+#     # fill PageIndex downward
+#     table_df = table_df.with_columns(
+#         pl.col("PageIndex").forward_fill().over("SessionId")
+#     )
 
-    # Grouping by PageIndex and filling FieldName downward and upward. Thus, FieldName will stay on the same side until a different FieldName appears on the side.
-    table_df = table_df.with_columns(
-        pl.col("FieldName").forward_fill().over("PageIndex")
-    )
-    table_df = table_df.with_columns(
-        pl.col("FieldName").backward_fill().over("PageIndex")
-    )
+#     # Grouping by PageIndex and filling FieldName downward and upward. Thus, FieldName will stay on the same side until a different FieldName appears on the side.
+#     table_df = table_df.with_columns(
+#         pl.col("FieldName").forward_fill().over("PageIndex")
+#     )
+#     table_df = table_df.with_columns(
+#         pl.col("FieldName").backward_fill().over("PageIndex")
+#     )
 
-    # Creating a new variable from FieldName where the last word is the variable name
-    table_df = table_df.with_columns(
-        pl.col("FieldName").str.split(by=".").list.last().alias("VariableName")
-    )
+#     # Creating a new variable from FieldName where the last word is the variable name
+#     table_df = table_df.with_columns(
+#         pl.col("FieldName").str.split(by=".").list.last().alias("VariableName")
+#     )
 
-    # Creating diff_time which is time per question
-    table_df = table_df.with_columns(
-        (
-            pl.col("TimeStamp").diff().over("SessionId").dt.total_milliseconds() * 0.001
-        ).alias("diff_time")
-    )
+#     # Creating diff_time which is time per question
+#     table_df = table_df.with_columns(
+#         (
+#             pl.col("TimeStamp").diff().over("SessionId").dt.total_milliseconds() * 0.001
+#         ).alias("diff_time")
+#     )
 
-    # If cati, grouping by sessionid and filling InterviewerId downward and upward as well
-    if "InterviewerId" in table_df.columns:
-        table_df = table_df.with_columns(
-            pl.col("InterviewerId").forward_fill().backward_fill().over("SessionId")
-        )
-        table_df = table_df.with_columns(
-            pl.when(pl.col("InterviewerId").is_not_null())
-            .then(pl.lit("CATI"))
-            .otherwise(pl.lit("CASI"))
-            .alias("Mode")
-        )
+#     # If cati, grouping by sessionid and filling InterviewerId downward and upward as well
+#     if "InterviewerId" in table_df.columns:
+#         table_df = table_df.with_columns(
+#             pl.col("InterviewerId").forward_fill().backward_fill().over("SessionId")
+#         )
+#         table_df = table_df.with_columns(
+#             pl.when(pl.col("InterviewerId").is_not_null())
+#             .then(pl.lit("CATI"))
+#             .otherwise(pl.lit("CASI"))
+#             .alias("Mode")
+#         )
 
-    else:
-        table_df = table_df.with_columns(pl.lit("CASI").alias("Mode"))
+#     else:
+#         table_df = table_df.with_columns(pl.lit("CASI").alias("Mode"))
 
-    # Grouping by sessionid and filling LayoutSetName downward and upward
-    table_df = table_df.with_columns(
-        pl.col("LayoutSetName").forward_fill().over("SessionId")
-    )
-    table_df = table_df.with_columns(
-        pl.col("LayoutSetName").backward_fill().over("SessionId")
-    )
+#     # Grouping by sessionid and filling LayoutSetName downward and upward
+#     table_df = table_df.with_columns(
+#         pl.col("LayoutSetName").forward_fill().over("SessionId")
+#     )
+#     table_df = table_df.with_columns(
+#         pl.col("LayoutSetName").backward_fill().over("SessionId")
+#     )
 
-    # Creating bolk variable
-    table_df = table_df.with_columns(
-        pl.col("FieldName")
-        .map_elements(make_bolk, return_dtype=pl.String)
-        .alias("Bolk")
-    )
+#     # Creating bolk variable
+#     table_df = table_df.with_columns(
+#         pl.col("FieldName")
+#         .map_elements(make_bolk, return_dtype=pl.String)
+#         .alias("Bolk")
+#     )
 
-    return pl.DataFrame(table_df)
+#     return pl.DataFrame(table_df)
 
+# +
+# def fill_para_pl(table_df: pl.DataFrame) -> pl.DataFrame:
+#     """
+#     param: pandas dataframe
+#     output: prepared pandas dataframe for analysis
+#     The function prepares table_df for data analysis:
+#     - fills PageIndex downward
+#     - fills FieldName downward
+#     - creates a new variable with VariableName
+#     - creates variable diff_time which represents time spent on each observation/action for an IO.
+#     - Fills LayoutSetName by session id
+#     - creates a new column with bolk name using the function make_bolk()
+#     """
 
-from polars.datatypes import Datetime
-
-
-def fill_para_pl(table_df: pl.DataFrame) -> pl.DataFrame:
-    """
-    param: pandas dataframe
-    output: prepared pandas dataframe for analysis
-    The function prepares table_df for data analysis:
-    - fills PageIndex downward
-    - fills FieldName downward
-    - creates a new variable with VariableName
-    - creates variable diff_time which represents time spent on each observation/action for an IO.
-    - Fills LayoutSetName by session id
-    - creates a new column with bolk name using the function make_bolk()
-    """
-
-    # Dato vi la til fillpara i synk
-    if (
-        table_df.schema["TimeStamp"] == Datetime
-        and table_df["TimeStamp"].is_not_null().all()
-    ):
-        # Ensure the column is a datetime type and handle nulls
-        if str(table_df["TimeStamp"].min()) < str(datetime(2024, 8, 16)):
-            table_df = fill_all_para_pl(table_df)
-            return pl.DataFrame(table_df)
-        else:
-            return pl.DataFrame(table_df)
-    else:
-        raise ValueError("TimeStamp is not a datetime column")
-
+#     # Dato vi la til fillpara i synk
+#     if (
+#         table_df.schema["TimeStamp"] == Datetime
+#         and table_df["TimeStamp"].is_not_null().all()
+#     ):
+#         # Ensure the column is a datetime type and handle nulls
+#         if str(table_df["TimeStamp"].min()) < str(datetime(2024, 8, 16)):
+#             table_df = fill_all_para_pl(table_df)
+#             return pl.DataFrame(table_df)
+#         else:
+#             return pl.DataFrame(table_df)
+#     else:
+#         raise ValueError("TimeStamp is not a datetime column")
+# -
 
 from pandas.api.types import is_datetime64_any_dtype
 
@@ -447,8 +422,8 @@ def fill_para_pd(table_df: pd.DataFrame) -> pd.DataFrame:
 # +
 def file_concat_pd(
     InstrumentId: str,
-    start_dato: Optional[date] = None,
-    slutt_dato: Optional[date] = None,
+    start_dato: date | None = None,
+    slutt_dato: date | None = None,
 ) -> pd.DataFrame:
     """
     Retrieves dialhistory data for a specified instrument for a given period.
@@ -528,61 +503,59 @@ def get_union_schema(files: list[str]) -> Schema:
     return union_schema
 
 
+# +
+# def file_concat_pl(
+#     InstrumentId: str,
+#     start_dato: Optional[date] = None,
+#     slutt_dato: Optional[date] = None,
+# ) -> pl.DataFrame:
+#     """
+#     Retrieves dialhistory data for a specified instrument for a given period.
+
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
+#     start_dato : datetime.date
+#         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     slutt_dato : datetime.date
+#         The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+#     Returns
+#     -------
+#     pl.DataFrame
+#         A Polars DataFrame containing the dialhistory data for the specified
+#         instrument.
+#     """
+#     filters = []
+#     if start_dato:
+#         filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
+
+#     if slutt_dato:
+#         filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
+
+#     # Define source bucket
+#     bucket = "ssb-datafangst-person-data-produkt-prod"
+#     # Define source path
+#     filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
+#     # Get google cloud filesystem
+#     fs = FileClient.get_gcs_file_system()
+
+#     # Make a list of files in the sorce folder
+#     files = fs.glob(filepath + "/*.parquet")
+
+#     # Create an unified schema from all files in the folder
+#     union_schema = get_union_schema(files)
+
+#     table_df = pq.ParquetDataset(
+#         files, filesystem=fs, schema=union_schema, filters=filters if filters else None
+#     ).read()
+#     table_df = pl.from_arrow(table_df)
+
+#     if "__index_level_0__" in table_df.columns:
+#         table_df = table_df.drop("__index_level_0__")
+#     return pl.DataFrame(table_df)
 # -
-
-
-def file_concat_pl(
-    InstrumentId: str,
-    start_dato: Optional[date] = None,
-    slutt_dato: Optional[date] = None,
-) -> pl.DataFrame:
-    """
-    Retrieves dialhistory data for a specified instrument for a given period.
-
-    Parameters
-    ----------
-    instrument_id : str
-        The ID of the instrument to retrieve data for.
-    start_dato : datetime.date
-        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-    slutt_dato : datetime.date
-        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-
-    Returns
-    -------
-    pl.DataFrame
-        A Polars DataFrame containing the dialhistory data for the specified
-        instrument.
-    """
-    filters = []
-    if start_dato:
-        filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
-
-    if slutt_dato:
-        filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
-
-    # Define source bucket
-    bucket = "ssb-datafangst-person-data-produkt-prod"
-    # Define source path
-    filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
-    # Get google cloud filesystem
-    fs = FileClient.get_gcs_file_system()
-
-    # Make a list of files in the sorce folder
-    files = fs.glob(filepath + "/*.parquet")
-
-    # Create an unified schema from all files in the folder
-    union_schema = get_union_schema(files)
-
-    table_df = pq.ParquetDataset(
-        files, filesystem=fs, schema=union_schema, filters=filters if filters else None
-    ).read()
-    table_df = pl.from_arrow(table_df)
-
-    if "__index_level_0__" in table_df.columns:
-        table_df = table_df.drop("__index_level_0__")
-    return pl.DataFrame(table_df)
-
 
 def para_concat_pd(
     InstrumentId: str,
@@ -631,105 +604,104 @@ def para_concat_pd(
     df = table_df.to_pandas()
     return pd.DataFrame(df)
 
-
 # +
-def para_concat_pl(
-    InstrumentId: str,
-    dager: Optional[int] = None,
-    start_dato: Optional[date] = None,
-    slutt_dato: Optional[date] = None,
-) -> pl.DataFrame:
-    """
-    Retrieves paradata for a specified instrument for a given period.
+# def para_concat_pl(
+#     InstrumentId: str,
+#     dager: Optional[int] = None,
+#     start_dato: Optional[date] = None,
+#     slutt_dato: Optional[date] = None,
+# ) -> pl.DataFrame:
+#     """
+#     Retrieves paradata for a specified instrument for a given period.
 
-    Parameters
-    ----------
-    instrument_id : str
-        The ID of the instrument to retrieve data for.
-    dager :  int
-        Number of days (dager) back in time
-    start_dato : datetime.date
-        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-    slutt_dato : datetime.date
-        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
+#     dager :  int
+#         Number of days (dager) back in time
+#     start_dato : datetime.date
+#         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     slutt_dato : datetime.date
+#         The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
 
-    Returns
-    -------
-    pl.DataFrame
-        A Polars DataFrame containing the dialhistory data for the specified
-        instrument.
+#     Returns
+#     -------
+#     pl.DataFrame
+#         A Polars DataFrame containing the dialhistory data for the specified
+#         instrument.
 
-    """
-    filters = []
-    if start_dato:
-        filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
+#     """
+#     filters = []
+#     if start_dato:
+#         filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
 
-    if slutt_dato:
-        filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
+#     if slutt_dato:
+#         filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
 
-    # Get access to filesystem at GCP
-    fs = FileClient.get_gcs_file_system()
+#     # Get access to filesystem at GCP
+#     fs = FileClient.get_gcs_file_system()
 
-    # Define source bucket
-    bucket = "ssb-datafangst-person-data-produkt-prod"
-    filepath = f"gs://{bucket}/{InstrumentId}/paradata"
+#     # Define source bucket
+#     bucket = "ssb-datafangst-person-data-produkt-prod"
+#     filepath = f"gs://{bucket}/{InstrumentId}/paradata"
 
-    # Make a list of files in the sorce folder
-    files = fs.glob(filepath + "/*.parquet")
-    union_schema = get_union_schema_para(files)
+#     # Make a list of files in the sorce folder
+#     files = fs.glob(filepath + "/*.parquet")
+#     union_schema = get_union_schema_para(files)
 
-    table_df = pq.ParquetDataset(
-        files, filesystem=fs, schema=union_schema, filters=filters if filters else None
-    ).read()
-    table_df = pl.from_arrow(table_df)
+#     table_df = pq.ParquetDataset(
+#         files, filesystem=fs, schema=union_schema, filters=filters if filters else None
+#     ).read()
+#     table_df = pl.from_arrow(table_df)
 
-    if "__index_level_0__" in table_df.columns:
-        table_df = table_df.drop("__index_level_0__")
+#     if "__index_level_0__" in table_df.columns:
+#         table_df = table_df.drop("__index_level_0__")
 
-    return pl.DataFrame(table_df)
+#     return pl.DataFrame(table_df)
 
 
-def get_union_schema_para(files: list[str]) -> Schema:
-    """
-    Creates a union of all schemas for the given list of Parquet files.
+# def get_union_schema_para(files: list[str]) -> Schema:
+#     """
+#     Creates a union of all schemas for the given list of Parquet files.
 
-    Parameters
-    ----------
-    files : list[str]
-        A list of file paths for the Parquet files.
+#     Parameters
+#     ----------
+#     files : list[str]
+#         A list of file paths for the Parquet files.
 
-    Returns
-    -------
-    Schema
-        A PyArrow schema representing the union of all schemas.
-    """
-    schemas = []
-    fs = FileClient.get_gcs_file_system()
+#     Returns
+#     -------
+#     Schema
+#         A PyArrow schema representing the union of all schemas.
+#     """
+#     schemas = []
+#     fs = FileClient.get_gcs_file_system()
 
-    # Iterate over each Parquet file
-    for file in files:
-        # Read the schema of the current Parquet file
-        schema = pq.read_schema(file, filesystem=fs)
+#     # Iterate over each Parquet file
+#     for file in files:
+#         # Read the schema of the current Parquet file
+#         schema = pq.read_schema(file, filesystem=fs)
 
-        # lag alle til string, untatt diff_time (dubble) og timestamp til datetime
-        new_fields = [
-            pa.field(
-                field.name,
-                (
-                    pa.float64()
-                    if field.name == "diff_time"
-                    else (
-                        pa.timestamp("ms") if field.name == "TimeStamp" else pa.string()
-                    )
-                ),  # Default to string for other fields
-                nullable=field.nullable,
-                metadata=field.metadata,
-            )
-            for field in schema
-        ]
+#         # lag alle til string, untatt diff_time (dubble) og timestamp til datetime
+#         new_fields = [
+#             pa.field(
+#                 field.name,
+#                 (
+#                     pa.float64()
+#                     if field.name == "diff_time"
+#                     else (
+#                         pa.timestamp("ms") if field.name == "TimeStamp" else pa.string()
+#                     )
+#                 ),  # Default to string for other fields
+#                 nullable=field.nullable,
+#                 metadata=field.metadata,
+#             )
+#             for field in schema
+#         ]
 
-        schemas.append(pa.schema(new_fields))
+#         schemas.append(pa.schema(new_fields))
 
-    union_schema = pa.unify_schemas(schemas)
+#     union_schema = pa.unify_schemas(schemas)
 
-    return union_schema
+#     return union_schema

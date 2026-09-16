@@ -60,26 +60,16 @@ def skjema_info():
 
 def velg_skjema():
 
-    filepath = "gs://ssb-datafangst-person-data-produkt-prod/skjemadatabase/*.parquet"
-    fs = FileClient.get_gcs_file_system()
+    from pathlib import Path
+    import pyarrow.parquet as pq
 
-    files = fs.glob(filepath)
-    df = (
-        pq.ParquetDataset(files,
-                    filesystem=fs,
-                   )
-    ).read().to_pandas()
+    files = [str(p) for p in Path("/buckets/produkt/skjemadatabase").glob("*.parquet")]
 
-    df =df.dropna(subset=['InstrumentId'])
-
+    df = pq.ParquetDataset(files).read().to_pandas()
+    df = df.dropna(subset=["InstrumentId"])
 
     global dropdown_widget
-    global InstrumentId
-    global filsti_utvalg
-    global skjemanavn
-    global siste_spm
-    global forste_spm
-
+    
     # Dato widget
     global start_date_widget
     global end_date_widget
@@ -91,7 +81,6 @@ def velg_skjema():
         # %store -r skjemanavn
         if skjemanavn in df['Skjemanavn'].unique().tolist():
             # %store -r InstrumentId
-            # %store -r siste_spm
             skjemanavn_list = sorted(df.query('Skjemanavn != @skjemanavn')['Skjemanavn'].unique().tolist())
             dropdown_widget = widgets.Dropdown(
                 options=[skjemanavn] + skjemanavn_list,  # Include navn as the first value
@@ -140,6 +129,8 @@ def velg_skjema():
 
     if output is not None:
         display(output)
+
+    return InstrumentId, skjemanavn
 
 
 
