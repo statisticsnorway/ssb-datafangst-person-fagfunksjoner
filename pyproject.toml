@@ -22,6 +22,8 @@ dapla-toolbelt = "^3.0.2"
 polars = "^1.14.0"
 ipykernel = "^6.29.5"
 nox = "^2024.10.9"
+plotly = "^7.1.0"
+ipywidgets = "^8.1.9"
 
 [[tool.mypy.overrides]]
 module = [

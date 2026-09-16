@@ -13,14 +13,14 @@ try:
     import ipywidgets as widgets
     import pyarrow.parquet as pq
 except ImportError:
-    print(b, "\nDu mangler nødvendige pakker",bb)
+    print("\nDu mangler nødvendige pakker")
     print("Installer nødvendige pakker:\n"
           "Gå til menyen oppe i venstre hjørne: File > New > Terminal\n"
           "I terminalen: skriv inn (uten $) og klikk enter:\n"
           "$ cd datafangst-person\n"
           "$ poetry install")
+    traceback.print_exc()
     exit(1)
-
 
 
 def skjema_info(): 
@@ -48,8 +48,8 @@ def skjema_info():
 
         skjemanavn =  dropdown_widget.value
         InstrumentId = df.loc[df['Skjemanavn'] == dropdown_widget.value, 'InstrumentId'].values[0] 
-        %store InstrumentId
-        %store skjemanavn 
+        # %store InstrumentId
+        # %store skjemanavn 
         print(f"\nDu har valgt å se data om {b}{skjemanavn}{bb}, InstrumentId er {InstrumentId}")
 
         return InstrumentId, skjemanavn
@@ -87,11 +87,11 @@ def velg_skjema():
 
     skjemanavn_values = sorted(df['Skjemanavn'].unique().tolist())
 
-        try:
-        %store -r skjemanavn
+    try:
+        # %store -r skjemanavn
         if skjemanavn in df['Skjemanavn'].unique().tolist():
-            %store -r InstrumentId
-            %store -r siste_spm
+            # %store -r InstrumentId
+            # %store -r siste_spm
             skjemanavn_list = sorted(df.query('Skjemanavn != @skjemanavn')['Skjemanavn'].unique().tolist())
             dropdown_widget = widgets.Dropdown(
                 options=[skjemanavn] + skjemanavn_list,  # Include navn as the first value
@@ -112,7 +112,7 @@ def velg_skjema():
             value='',  # Set the initial value
             description='Velg skjema:'
         )
-     style = {'description_width': 'initial', 'width': '500px', 'max_width': '400px', 'max_height': '100px'}
+    style = {'description_width': 'initial', 'width': '500px', 'max_width': '400px', 'max_height': '100px'}
     dropdown_widget.style = style
     output = widgets.Output()
 
@@ -140,4 +140,6 @@ def velg_skjema():
 
     if output is not None:
         display(output)
+
+
 
