@@ -135,13 +135,10 @@ def hent_utvalg_pd(instrument_id: str) -> pd.DataFrame:
         A Pandas DataFrame containing the utvalg information for the specified
         instrument.
     """
-    from pathlib import Path
-    import pyarrow.parquet as pq
-
-    files = [str(p) for p in Path(f"/buckets/produkt/{instrument_id}/utvalg").glob("*.parquet")]
-    df = pq.ParquetDataset(files, filters=filters if filters else None).read().to_pandas()
+    
+    df = pd.read_parquet(f"/buckets/produkt/{instrument_id}/utvalg/utvalg.parquet")
         
-    return pd.DataFrame(df)
+    return df
     
 
 
