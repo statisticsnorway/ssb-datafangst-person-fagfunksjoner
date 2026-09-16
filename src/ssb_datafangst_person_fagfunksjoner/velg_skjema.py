@@ -104,6 +104,8 @@ def velg_skjema():
     valg = {
         "InstrumentId": None,
         "skjemanavn": None,
+        "start_dato": None,
+        "slutt_dato": None
     }
 
     def on_dropdown_change(change):
@@ -127,7 +129,15 @@ def velg_skjema():
                 f"InstrumentId er {instrument_id}"
             )
 
+    def on_start_date_change(change):
+        valg["start_dato"] = change.new
+
+    def on_end_date_change(change):
+        valg["slutt_dato"] = change.new
+
     dropdown_widget.observe(on_dropdown_change, names="value")
+    start_date_widget.observe(on_start_date_change, names="value",)
+    end_date_widget.observe(on_end_date_change, names="value",)
 
     text_widget = widgets.HTML(
         value="La dato stå blank om du ønsker å se på all data for denne undersøkelsen."
