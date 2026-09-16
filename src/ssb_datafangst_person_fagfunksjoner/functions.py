@@ -496,49 +496,49 @@ def hent_ringedata(
 #     if "__index_level_0__" in table_df.columns:
 #         table_df = table_df.drop("__index_level_0__")
 #     return pl.DataFrame(table_df)
-# -
 
-def para_concat_pd(
-    InstrumentId: str,
-    start_dato: Optional[date] = None,
-    slutt_dato: Optional[date] = None,
-) -> pd.DataFrame:
-    """
-    Retrieves paradata for a specified instrument for a given period.
+# +
+# def para_concat_pd(
+#     InstrumentId: str,
+#     start_dato: Optional[date] = None,
+#     slutt_dato: Optional[date] = None,
+# ) -> pd.DataFrame:
+#     """
+#     Retrieves paradata for a specified instrument for a given period.
 
-    Parameters
-    ----------
-    instrument_id : str
-        The ID of the instrument to retrieve data for.
-    start_dato : datetime.date
-        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-    slutt_dato : datetime.date
-        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
+#     start_dato : datetime.date
+#         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     slutt_dato : datetime.date
+#         The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
 
-    Returns
-    -------
-    pd.DataFrame
-        A Pandas DataFrame containing the dialhistory data for the specified
-        instrument.
+#     Returns
+#     -------
+#     pd.DataFrame
+#         A Pandas DataFrame containing the dialhistory data for the specified
+#         instrument.
 
-    """
-    from pathlib import Path
-    import pyarrow.parquet as pq
+#     """
+#     from pathlib import Path
+#     import pyarrow.parquet as pq
 
-    filters = []
-    if start_dato:
-        filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
+#     filters = []
+#     if start_dato:
+#         filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
 
-    if slutt_dato:
-        filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
+#     if slutt_dato:
+#         filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
 
-    files = [str(p) for p in Path(f"/buckets/produkt/{instrument_id}/paradata").glob("*.parquet")]
-    df = pq.ParquetDataset(files, filters=filters if filters else None).read().to_pandas()
+#     files = [str(p) for p in Path(f"/buckets/produkt/{instrument_id}/paradata").glob("*.parquet")]
+#     df = pq.ParquetDataset(files, filters=filters if filters else None).read().to_pandas()
         
-    return pd.DataFrame(df)
+#     return pd.DataFrame(df)
 
-    df = table_df.to_pandas()
-    return pd.DataFrame(df)
+#     df = table_df.to_pandas()
+#     return pd.DataFrame(df)
 
 # +
 # def para_concat_pl(
