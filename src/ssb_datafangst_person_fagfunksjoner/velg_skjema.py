@@ -60,81 +60,88 @@ except ImportError:
 # -
 
 def velg_skjema():
-
     from pathlib import Path
     import pyarrow.parquet as pq
 
-    files = [str(p) for p in Path("/buckets/produkt/skjemadatabase").glob("*.parquet")]
+    files = [
+        str(p)
+        for p in Path("/buckets/produkt/skjemadatabase").glob("*.parquet")
+    ]
 
     df = pq.ParquetDataset(files).read().to_pandas()
     df = df.dropna(subset=["InstrumentId"])
 
-    global dropdown_widget
-    
-    # Dato widget
-    global start_date_widget
-    global end_date_widget
+    skjemanavn_values = sorted(df["Skjemanavn"].unique())
 
-    InstrumentId = ''
-    skjemanavn = ''
+    dropdown_widget = widgets.Dropdown(
+        options=[""] + skjemanavn_values,
+        value="",
+        description="Velg skjema:",
+    )
 
+    style = {
+        "description_width": "initial",
+        "width": "500px",
+        "max_width": "400px",
+        "max_height": "100px",
+    }
 
-    skjemanavn_values = sorted(df['Skjemanavn'].unique().tolist())
-
-    try:
-        # %store -r skjemanavn
-        if skjemanavn in df['Skjemanavn'].unique().tolist():
-            # %store -r InstrumentId
-            skjemanavn_list = sorted(df.query('Skjemanavn != @skjemanavn')['Skjemanavn'].unique().tolist())
-            dropdown_widget = widgets.Dropdown(
-                options=[skjemanavn] + skjemanavn_list,  # Include navn as the first value
-                value=skjemanavn,  # Set the initial value
-                description='Velg skjema:'
-            )
-        else:
-            dropdown_widget = widgets.Dropdown(
-            options=[''] + list(skjemanavn_values),  # Include navn as the first value
-            value='',  # Set the initial value
-            description='Velg skjema:'
-        )
-
-    except:
-        print("Ignorer meldingen 'no stored variable og alias skjemanavn'")
-        dropdown_widget = widgets.Dropdown(
-            options=[''] + list(skjemanavn_values),  # Include navn as the first value
-            value='',  # Set the initial value
-            description='Velg skjema:'
-        )
-    style = {'description_width': 'initial', 'width': '500px', 'max_width': '400px', 'max_height': '100px'}
     dropdown_widget.style = style
     output = widgets.Output()
 
-    # Define a function to handle widget changes
+    start_date_widget = widgets.DatePicker(
+        description="Dato fra:",
+        style=style,
+        max=datetime.today().date(),
+    )
+
+    end_date_widget = widgets.DatePicker(
+        description="Dato til:",
+        style=style,
+        max=datetime.today().date(),
+    )
+
+    valg = {
+        "InstrumentId": None,
+        "skjemanavn": None,
+    }
+
     def on_dropdown_change(change):
-        global selected_value
-        selected_value = change.new
+        skjemanavn = change.new
+
+        if not skjemanavn:
+            return
+
+        instrument_id = df.loc[
+            df["Skjemanavn"] == skjemanavn,
+            "InstrumentId",
+        ].iloc[0]
+
+        valg["InstrumentId"] = instrument_id
+        valg["skjemanavn"] = skjemanavn
+
         with output:
-            clear_output()  # Clear previous output
-            InstrumentId, skjemanavn = skjema_info()
+            clear_output()
+            print(
+                f"Du har valgt {skjemanavn}, "
+                f"InstrumentId er {instrument_id}"
+            )
 
-    # Attach the function to the widget's change event
-    dropdown_widget.observe(on_dropdown_change, names='value')
+    dropdown_widget.observe(on_dropdown_change, names="value")
 
-    ## Tekst widget
-    text_widget = widgets.HTML(value="La dato stå blank om du ønsker å se på all data for denne undersøkelsen.")
+    text_widget = widgets.HTML(
+        value="La dato stå blank om du ønsker å se på all data for denne undersøkelsen."
+    )
 
-    ## Date widget
-    ## Eki: Lagt max dato in start og slutt dato. Hvis brukeren velger dato i framtiden, velges det automatisk dagensdato.
-    start_date_widget = widgets.DatePicker(description='Dato fra:', style=style, max = datetime.today().date())
-    end_date_widget = widgets.DatePicker(description='Dato til:', style=style, max = datetime.today().date())
+    display(
+        dropdown_widget,
+        text_widget,
+        start_date_widget,
+        end_date_widget,
+        output,
+    )
 
-    # Display drop down
-    display(dropdown_widget, text_widget, start_date_widget, end_date_widget)
-
-    if output is not None:
-        display(output)
-
-    return InstrumentId, skjemanavn
+    return valg
 
 
 
