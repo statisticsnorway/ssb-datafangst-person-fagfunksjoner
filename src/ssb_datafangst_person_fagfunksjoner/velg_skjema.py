@@ -74,6 +74,8 @@ def velg_skjema():
     global start_date_widget
     global end_date_widget
 
+    InstrumentId = ''
+
 
     skjemanavn_values = sorted(df['Skjemanavn'].unique().tolist())
 
