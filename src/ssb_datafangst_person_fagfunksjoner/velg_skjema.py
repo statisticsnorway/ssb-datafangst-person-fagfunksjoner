@@ -1,13 +1,13 @@
 try:
     import os
-    import plotly.io as pio
+    #import plotly.io as pio
     import pandas as pd
     import dapla as dp
     from datetime import datetime
     import numpy as np
     from dapla import FileClient
     import pyarrow.parquet as pq
-    import plotly.express as px
+    #import plotly.express as px
     import ipywidgets as widgets
     from IPython.display import display, clear_output, HTML
     import ipywidgets as widgets
