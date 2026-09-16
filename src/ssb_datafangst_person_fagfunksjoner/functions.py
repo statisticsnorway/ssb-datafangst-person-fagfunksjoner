@@ -418,89 +418,88 @@ def fill_para_pd(table_df: pd.DataFrame) -> pd.DataFrame:
     else:
         raise ValueError("TimeStamp is not datetime column")
 
-
 # +
-def file_concat_pd(
-    InstrumentId: str,
-    start_dato: date | None = None,
-    slutt_dato: date | None = None,
-) -> pd.DataFrame:
-    """
-    Retrieves dialhistory data for a specified instrument for a given period.
+# def file_concat_pd(
+#     InstrumentId: str,
+#     start_dato: date | None = None,
+#     slutt_dato: date | None = None,
+# ) -> pd.DataFrame:
+#     """
+#     Retrieves dialhistory data for a specified instrument for a given period.
 
-    Parameters
-    ----------
-    instrument_id : str
-        The ID of the instrument to retrieve data for.
-    start_dato : datetime.date
-        The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-    slutt_dato : datetime.date
-        The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
+#     start_dato : datetime.date
+#         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     slutt_dato : datetime.date
+#         The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
 
-    Returns
-    -------
-    pd.DataFrame
-        A Pandas DataFrame containing the dialhistory data information for the specified
-        instrument.
-    """
+#     Returns
+#     -------
+#     pd.DataFrame
+#         A Pandas DataFrame containing the dialhistory data information for the specified
+#         instrument.
+#     """
 
-    filters = []
-    if start_dato:
-        filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
+#     filters = []
+#     if start_dato:
+#         filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
 
-    if slutt_dato:
-        filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
-    # Define source bucket
-    bucket = "ssb-datafangst-person-data-produkt-prod"
+#     if slutt_dato:
+#         filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
+#     # Define source bucket
+#     bucket = "ssb-datafangst-person-data-produkt-prod"
 
-    # Define source path
-    filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
-    # Get google cloud filesystem
-    fs = FileClient.get_gcs_file_system()
+#     # Define source path
+#     filepath = f"gs://{bucket}/{InstrumentId}/dialhistory"
+#     # Get google cloud filesystem
+#     fs = FileClient.get_gcs_file_system()
 
-    # Make a list of files in the sorce folder
-    files = fs.glob(filepath + "/*.parquet")
+#     # Make a list of files in the sorce folder
+#     files = fs.glob(filepath + "/*.parquet")
 
-    # Create an unified schema from all files in the folder
-    union_schema = get_union_schema(files)
+#     # Create an unified schema from all files in the folder
+#     union_schema = get_union_schema(files)
 
-    table_df = pq.ParquetDataset(
-        files,
-        filesystem=fs,
-        schema=union_schema,
-        filters=filters if filters else None,
-    ).read()
+#     table_df = pq.ParquetDataset(
+#         files,
+#         filesystem=fs,
+#         schema=union_schema,
+#         filters=filters if filters else None,
+#     ).read()
 
-    df = table_df.to_pandas()
-    return pd.DataFrame(df)
+#     df = table_df.to_pandas()
+#     return pd.DataFrame(df)
 
 
-def get_union_schema(files: list[str]) -> Schema:
-    """
-    Creates a union of all schemas for the given list of Parquet files.
+# def get_union_schema(files: list[str]) -> Schema:
+#     """
+#     Creates a union of all schemas for the given list of Parquet files.
 
-    Parameters
-    ----------
-    files : list[str]
-        A list of file paths for the Parquet files.
+#     Parameters
+#     ----------
+#     files : list[str]
+#         A list of file paths for the Parquet files.
 
-    Returns
-    -------
-    Schema
-        A PyArrow schema representing the union of all schemas.
-    """
-    fs = FileClient.get_gcs_file_system()
-    schemas = []
-    # Iterate over each Parquet file
-    for file in files:
-        # Read the schema of the current Parquet file
-        schema = pq.read_schema(file, filesystem=fs)
-        schemas.append(schema)
+#     Returns
+#     -------
+#     Schema
+#         A PyArrow schema representing the union of all schemas.
+#     """
+#     fs = FileClient.get_gcs_file_system()
+#     schemas = []
+#     # Iterate over each Parquet file
+#     for file in files:
+#         # Read the schema of the current Parquet file
+#         schema = pq.read_schema(file, filesystem=fs)
+#         schemas.append(schema)
 
-    # Use pyarrow.unify_schemas to merge all the collected schemas
-    union_schema = pa.unify_schemas(schemas)
+#     # Use pyarrow.unify_schemas to merge all the collected schemas
+#     union_schema = pa.unify_schemas(schemas)
 
-    return union_schema
+#     return union_schema
 
 
 # +
@@ -581,6 +580,9 @@ def para_concat_pd(
         instrument.
 
     """
+    from pathlib import Path
+    import pyarrow.parquet as pq
+
     filters = []
     if start_dato:
         filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
@@ -588,18 +590,10 @@ def para_concat_pd(
     if slutt_dato:
         filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
 
-    # Get access to filesystem at GCP
-    fs = FileClient.get_gcs_file_system()
-    # Define source bucket
-    bucket = "ssb-datafangst-person-data-produkt-prod"
-    filepath = f"gs://{bucket}/{InstrumentId}/paradata"
-    # Make a list of files in the sorce folder
-    files = fs.glob(filepath + "/*.parquet")
-
-    union_schema = get_union_schema_para(files)
-    table_df = pq.ParquetDataset(
-        files, filesystem=fs, schema=union_schema, filters=filters if filters else None
-    ).read()
+    files = [str(p) for p in Path(f"/buckets/produkt/{instrument_id}/paradata").glob("*.parquet")]
+    df = pq.ParquetDataset(files, filters=filters if filters else None).read().to_pandas()
+        
+    return pd.DataFrame(df)
 
     df = table_df.to_pandas()
     return pd.DataFrame(df)
