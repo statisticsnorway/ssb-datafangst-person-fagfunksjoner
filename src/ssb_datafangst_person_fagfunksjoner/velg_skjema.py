@@ -1,26 +1,14 @@
-try:
-    import os
-    #import plotly.io as pio
-    import pandas as pd
-    import dapla as dp
-    from datetime import datetime
-    import numpy as np
-    #from dapla import FileClient
-    import pyarrow.parquet as pq
-    #import plotly.express as px
-    import ipywidgets as widgets
-    from IPython.display import display, clear_output, HTML
-    import ipywidgets as widgets
-    import pyarrow.parquet as pq
-except ImportError:
-    print("\nDu mangler nødvendige pakker")
-    print("Installer nødvendige pakker:\n"
-          "Gå til menyen oppe i venstre hjørne: File > New > Terminal\n"
-          "I terminalen: skriv inn (uten $) og klikk enter:\n"
-          "$ cd datafangst-person\n"
-          "$ poetry install")
-    traceback.print_exc()
-    exit(1)
+import os
+#import plotly.io as pio
+import pandas as pd
+import dapla as dp
+from datetime import datetime
+import numpy as np
+#from dapla import FileClient
+import pyarrow.parquet as pq
+#import plotly.express as px
+from IPython.display import display, clear_output, HTML
+import ipywidgets as widgets    
 
 
 # +
@@ -62,6 +50,7 @@ except ImportError:
 def velg_skjema():
     from pathlib import Path
     import pyarrow.parquet as pq
+    
 
     files = [
         str(p)

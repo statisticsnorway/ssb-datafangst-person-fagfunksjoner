@@ -137,7 +137,7 @@ def hent_utvalg_pd(instrument_id: str) -> pd.DataFrame:
     df = pd.read_parquet(f"/buckets/produkt/{instrument_id}/utvalg/utvalg.parquet")
         
     return df
-    
+
 
 
 # +
