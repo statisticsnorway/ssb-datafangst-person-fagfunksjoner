@@ -1,3 +1,27 @@
+# # Eksempel på bruk - hente landsinndeling fra kommunenummer
+# # Antar dataene kun har kommunenummer, da må man først hente fylkesinndeling:
+# dokrappdf = add_klass_mapping(
+#     dokrappdf,
+#     column="municipalityNumber",
+#     source="Standard for kommuneinndeling",
+#     target="Standard for fylkesinndeling",
+#     date="2026-09-03",
+#     output="code",
+#     new_column="fylke"
+# )
+
+# # Deretter landsinndeling
+# dokrappdf = add_klass_mapping(
+#     dokrappdf,
+#     column="fylke",
+#     source="Standard for fylkesinndeling",
+#     target="Standard for landsdelsinndeling",
+#     date="2026-09-03",
+#     output="name",
+#     new_column="landsdel"
+# )
+
+
 import pandas as pd
 import requests
 
