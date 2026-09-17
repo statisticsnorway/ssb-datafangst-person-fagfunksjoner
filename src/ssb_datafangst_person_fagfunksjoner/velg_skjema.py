@@ -11,42 +11,6 @@ from IPython.display import display, clear_output, HTML
 import ipywidgets as widgets    
 
 
-# +
-# def skjema_info(): 
-#     """
-#     Oppdaterer og lagrer variabler med info om undersøkelsen etter bruker har valgt undersøkelse i dropdown. Valget blir også lagret så dette slipper å bli gjort i hver notebook. 
-#     """
-#     global InstrumentId 
-#     global skjemanavn 
-#     b =' \033[1m'
-#     bb = '\033[0m'
-    
-#     skjemanavn =  dropdown_widget.value
-#     if skjemanavn != '': 
-#         filepath = "gs://ssb-datafangst-person-data-produkt-prod/skjemadatabase/*.parquet"
-#         fs = FileClient.get_gcs_file_system()
-
-#         files = fs.glob(filepath) 
-#         df = (
-#             pq.ParquetDataset(files, 
-#                         filesystem=fs, 
-#                        )
-#         ).read().to_pandas() 
-
-#         df = df.dropna(subset=['InstrumentId'])
-
-#         skjemanavn =  dropdown_widget.value
-#         InstrumentId = df.loc[df['Skjemanavn'] == dropdown_widget.value, 'InstrumentId'].values[0] 
-#         %store InstrumentId
-#         %store skjemanavn 
-#         print(f"\nDu har valgt å se data om {b}{skjemanavn}{bb}, InstrumentId er {InstrumentId}")
-
-#         return InstrumentId, skjemanavn
-#     else: 
-#         print('velg et skjema i dropdown listen')    
-# # funksjon for å oppdatere info her
-# -
-
 def velg_skjema():
     from pathlib import Path
     import pyarrow.parquet as pq
@@ -141,6 +105,42 @@ def velg_skjema():
     )
 
     return valg
+
+# +
+# def skjema_info(): 
+#     """
+#     Oppdaterer og lagrer variabler med info om undersøkelsen etter bruker har valgt undersøkelse i dropdown. Valget blir også lagret så dette slipper å bli gjort i hver notebook. 
+#     """
+#     global InstrumentId 
+#     global skjemanavn 
+#     b =' \033[1m'
+#     bb = '\033[0m'
+    
+#     skjemanavn =  dropdown_widget.value
+#     if skjemanavn != '': 
+#         filepath = "gs://ssb-datafangst-person-data-produkt-prod/skjemadatabase/*.parquet"
+#         fs = FileClient.get_gcs_file_system()
+
+#         files = fs.glob(filepath) 
+#         df = (
+#             pq.ParquetDataset(files, 
+#                         filesystem=fs, 
+#                        )
+#         ).read().to_pandas() 
+
+#         df = df.dropna(subset=['InstrumentId'])
+
+#         skjemanavn =  dropdown_widget.value
+#         InstrumentId = df.loc[df['Skjemanavn'] == dropdown_widget.value, 'InstrumentId'].values[0] 
+#         %store InstrumentId
+#         %store skjemanavn 
+#         print(f"\nDu har valgt å se data om {b}{skjemanavn}{bb}, InstrumentId er {InstrumentId}")
+
+#         return InstrumentId, skjemanavn
+#     else: 
+#         print('velg et skjema i dropdown listen')    
+# # funksjon for å oppdatere info her
+# -
 
 
 
