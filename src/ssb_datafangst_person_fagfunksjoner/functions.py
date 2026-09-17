@@ -6,27 +6,6 @@ import pandas as pd
 
 # -
 
-def example_function(number1: int, number2: int) -> str:
-    """Compare two integers.
-    This is merely an example function can be deleted. It is used to show and test generating
-    documentation from code, type hinting, testing, and testing examples
-    in the code.
-    Args:
-        number1: The first number.
-        number2: The second number, which will be compared to number1.
-    Returns:
-        A string describing which number is the greatest.
-    Examples:
-        Examples should be written in doctest format, and should illustrate how
-        to use the function.
-        >>> example_function(1, 2)
-        1 is less than 2
-    """
-    if number1 < number2:
-        return f"{number1} is less than {number2}"
-    return f"{number1} is greater than or equal to {number2}"
-
-
 def hent_status_pd(
     instrument_id: str,
     start_dato: date | None = None,
@@ -68,56 +47,6 @@ def hent_status_pd(
     return pd.DataFrame(df)
 
 
-# +
-# def hent_status_pl(
-#     instrument_id: str,
-#     start_dato: Optional[date] = None,
-#     slutt_dato: Optional[date] = None,
-# ) -> pl.DataFrame:
-#     """
-#     Retrieves status data from GCS for a specified instrument within a given date range.
-
-#     Parameters
-#     ----------
-#     instrument_id : str
-#         The ID of the instrument to retrieve data for.
-#     start_dato : datetime.date
-#         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-#     slutt_dato : datetime.date
-#         The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
-
-#     Returns
-#     -------
-#     pl.DataFrame
-#         A Polars DataFrame containing the status information for the specified
-#         instrument within the defined date range.
-#     """
-
-#     fs = FileClient.get_gcs_file_system()
-
-#     filepath = fs.glob(
-#         f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/status/*.parquet"
-#     )
-
-#     filters = []
-#     if start_dato:
-#         filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
-
-#     if slutt_dato:
-#         filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
-
-#     df = (
-#         pq.ParquetDataset(filepath, filesystem=fs, filters=filters if filters else None)
-#     ).read()
-
-#     df = pl.from_arrow(df)
-
-#     if "__index_level_0__" in df.columns:
-#         df = df.drop("__index_level_0__")
-
-#     return pl.DataFrame(df)
-# -
-
 def hent_utvalg_pd(instrument_id: str) -> pd.DataFrame:
     """
     Retrieves utvalg data from GCS for a specified instrument.
@@ -138,45 +67,6 @@ def hent_utvalg_pd(instrument_id: str) -> pd.DataFrame:
         
     return df
 
-
-
-# +
-# def hent_utvalg_pl(instrument_id: str) -> pl.DataFrame:
-#     """
-#     Retrieves utvalg data from GCS for a specified instrument.
-
-#     Parameters
-#     ----------
-#     instrument_id : str
-#         The ID of the instrument to retrieve data for.
-
-#     Returns
-#     -------
-#     pl.DataFrame
-#         A Polars DataFrame containing the utvalg information for the specified
-#         instrument.
-#     """
-
-#     fs = FileClient.get_gcs_file_system()
-
-#     filepath = fs.glob(
-#         f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/utvalg/*.parquet"
-#     )
-
-#     df = (
-#         pq.ParquetDataset(
-#             filepath,
-#             filesystem=fs,
-#         )
-#     ).read()
-
-#     df = pl.from_arrow(df)
-
-#     if "__index_level_0__" in df.columns:
-#         df = df.drop("__index_level_0__")
-
-#     return pl.DataFrame(df)
-# -
 
 def question_sorting(x: pd.DataFrame) -> list[str]:
     """
@@ -276,6 +166,153 @@ def make_bolk(row: str) -> str:
         else:
             return row
 
+
+def fill_para_pd(table_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    param: pandas dataframe
+    output: prepared pandas dataframe for analysis
+    The function prepares table_df for data analysis:
+    - fills PageIndex downward
+    - fills FieldName downward
+    - creates a new variable with VariableName
+    - creates variable diff_time which represents time spent on each observation/action for an IO.
+    - Fills LayoutSetName by session id
+    - creates a new column with bolk name using the function make_bolk()
+    """
+
+    # Check if "TimeStamp" is a datetime type
+    # Dato vi la til fillpara i synk
+    if is_datetime64_any_dtype(table_df["TimeStamp"]):
+        if str(table_df["TimeStamp"].min()) < str(datetime(2024, 8, 16)):
+
+            polars_table_df = pl.from_pandas(table_df)
+
+            polars_table_df = fill_all_para_pl(polars_table_df)
+
+            pandas_df = polars_table_df.to_pandas()
+
+            return pd.DataFrame(pandas_df)
+        else:
+            return pd.DataFrame(table_df)
+    else:
+        raise ValueError("TimeStamp is not datetime column")
+
+
+# +
+from datetime import date
+from pathlib import Path
+
+import pandas as pd
+
+def hent_ringedata(
+    instrumentId: str,
+    start_dato: date | None = None,
+    slutt_dato: date | None = None,
+) -> pd.DataFrame:
+
+    filters = []
+
+    if start_dato:
+        filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
+
+    if slutt_dato:
+        filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
+
+    path = (
+        Path("/buckets/produkt")
+        / instrumentId
+        / "dialhistory"
+        / "dialhistory.parquet"
+    )
+
+    return pd.read_parquet(path, filters=filters if filters else None)
+
+
+# +
+# def hent_utvalg_pl(instrument_id: str) -> pl.DataFrame:
+#     """
+#     Retrieves utvalg data from GCS for a specified instrument.
+
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
+
+#     Returns
+#     -------
+#     pl.DataFrame
+#         A Polars DataFrame containing the utvalg information for the specified
+#         instrument.
+#     """
+
+#     fs = FileClient.get_gcs_file_system()
+
+#     filepath = fs.glob(
+#         f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/utvalg/*.parquet"
+#     )
+
+#     df = (
+#         pq.ParquetDataset(
+#             filepath,
+#             filesystem=fs,
+#         )
+#     ).read()
+
+#     df = pl.from_arrow(df)
+
+#     if "__index_level_0__" in df.columns:
+#         df = df.drop("__index_level_0__")
+
+#     return pl.DataFrame(df)
+
+# +
+# def hent_status_pl(
+#     instrument_id: str,
+#     start_dato: Optional[date] = None,
+#     slutt_dato: Optional[date] = None,
+# ) -> pl.DataFrame:
+#     """
+#     Retrieves status data from GCS for a specified instrument within a given date range.
+
+#     Parameters
+#     ----------
+#     instrument_id : str
+#         The ID of the instrument to retrieve data for.
+#     start_dato : datetime.date
+#         The start date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+#     slutt_dato : datetime.date
+#         The end date of the range for filtering data. Example: datetime.date(2024, 10, 29)
+
+#     Returns
+#     -------
+#     pl.DataFrame
+#         A Polars DataFrame containing the status information for the specified
+#         instrument within the defined date range.
+#     """
+
+#     fs = FileClient.get_gcs_file_system()
+
+#     filepath = fs.glob(
+#         f"gs://ssb-datafangst-person-data-produkt-prod/{instrument_id}/status/*.parquet"
+#     )
+
+#     filters = []
+#     if start_dato:
+#         filters.append(("TimeStamp", ">=", pd.Timestamp(start_dato)))
+
+#     if slutt_dato:
+#         filters.append(("TimeStamp", "<=", pd.Timestamp(slutt_dato)))
+
+#     df = (
+#         pq.ParquetDataset(filepath, filesystem=fs, filters=filters if filters else None)
+#     ).read()
+
+#     df = pl.from_arrow(df)
+
+#     if "__index_level_0__" in df.columns:
+#         df = df.drop("__index_level_0__")
+
+#     return pl.DataFrame(df)
 
 # +
 # def fill_all_para_pl(table_df: pl.DataFrame) -> pl.DataFrame:
@@ -378,71 +415,6 @@ def make_bolk(row: str) -> str:
 #             return pl.DataFrame(table_df)
 #     else:
 #         raise ValueError("TimeStamp is not a datetime column")
-# -
-
-from pandas.api.types import is_datetime64_any_dtype
-
-
-def fill_para_pd(table_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    param: pandas dataframe
-    output: prepared pandas dataframe for analysis
-    The function prepares table_df for data analysis:
-    - fills PageIndex downward
-    - fills FieldName downward
-    - creates a new variable with VariableName
-    - creates variable diff_time which represents time spent on each observation/action for an IO.
-    - Fills LayoutSetName by session id
-    - creates a new column with bolk name using the function make_bolk()
-    """
-
-    # Check if "TimeStamp" is a datetime type
-    # Dato vi la til fillpara i synk
-    if is_datetime64_any_dtype(table_df["TimeStamp"]):
-        if str(table_df["TimeStamp"].min()) < str(datetime(2024, 8, 16)):
-
-            polars_table_df = pl.from_pandas(table_df)
-
-            polars_table_df = fill_all_para_pl(polars_table_df)
-
-            pandas_df = polars_table_df.to_pandas()
-
-            return pd.DataFrame(pandas_df)
-        else:
-            return pd.DataFrame(table_df)
-    else:
-        raise ValueError("TimeStamp is not datetime column")
-
-
-# +
-from datetime import date
-from pathlib import Path
-
-import pandas as pd
-
-def hent_ringedata(
-    instrumentId: str,
-    start_dato: date | None = None,
-    slutt_dato: date | None = None,
-) -> pd.DataFrame:
-
-    filters = []
-
-    if start_dato:
-        filters.append(("StartTime", ">=", pd.Timestamp(start_dato)))
-
-    if slutt_dato:
-        filters.append(("EndTime", "<=", pd.Timestamp(slutt_dato)))
-
-    path = (
-        Path("/buckets/produkt")
-        / instrumentId
-        / "dialhistory"
-        / "dialhistory.parquet"
-    )
-
-    return pd.read_parquet(path, filters=filters if filters else None)
-
 
 # +
 # def file_concat_pl(
